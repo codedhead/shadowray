@@ -1,0 +1,5 @@
+common.glsl
+path.rgen
+envmap.rmiss
+checker.rchit
+phong.rchit

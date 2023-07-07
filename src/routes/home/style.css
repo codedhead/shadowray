@@ -1,0 +1,21 @@
+.home {
+  padding: 56px 20px;
+  min-height: 100%;
+  width: 100%;
+}
+
+.bodyContainer {
+  margin: 10px;
+  display: flex;
+  flex-direction: row;
+}
+
+.canvas {
+  margin: 5px;
+  width: 512px;
+}
+
+.editor {
+  margin: 5px;
+  flex-grow: 1;
+}

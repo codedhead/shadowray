@@ -1,0 +1,154 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+#extension GL_GOOGLE_include_directive : require
+#include "common.glsl"
+
+layout(location = 0) rayPayloadEXT RayPayload_PT_Radiance payload;
+layout(location = 1) rayPayloadEXT bool shadowRayIsShadowed;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+
+layout(std140, set = 0, binding = 1) buffer PixelBuffer { vec4 pixels[]; }
+pixelBuffer;
+
+layout(std140, set = 0, binding = 2) uniform SceneUniforms {
+  uint reset;
+  vec4 mouse;  // mouse pixel coords. xy: current (if MLB down), zw: click
+}
+uScene;
+
+layout(shaderRecordEXT) buffer Pinhole {
+  mat4 initial_transform_to_world;
+  float vfov_radian;
+}
+pinhole;
+
+vec3 sampleRayDirection(float vfov, mat4 transform_to_world, const vec2 pixel) {
+  vec2 iplane = getImagePlaneSize(vfov);
+  vec2 ixy = (vec2(-0.5, -0.5) + pixel / gl_LaunchSizeEXT.xy) * iplane;
+  vec3 local_dir = normalize(vec3(-ixy.x, -ixy.y, 1.0));  // flip x(pixel.x)
+  return (transform_to_world * vec4(local_dir, 0.)).xyz;
+}
+
+//! this needs to match `rayTypes` in .jsonc
+const uint NUM_RAY_TYPES = 2u;
+const uint RADIANCE_RAY = 0u;
+const uint SHADOW_RAY = 1u;
+
+const uint MAX_DEPTH = 10u;
+const float SHADOW_EPSILON = 1e-3;
+const float RT_DEFAULT_MAX = 3e38;
+const uint SPP = 1u;
+const uint MAX_SPP = 4096u;
+
+// multiple importance sampling path tracing
+void main() {
+  const uint pixelIndex = uint(gl_LaunchIDEXT.y) * uint(gl_LaunchSizeEXT.x) +
+                          uint(gl_LaunchIDEXT.x);
+  uint lauchIndex = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y +
+                    gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+  const float SPEED_ROTATE = 0.2;
+  if (uScene.reset > 0) {
+    pixelBuffer.pixels[pixelIndex] = vec4(0.0);
+  }
+  float frameNum = pixelBuffer.pixels[pixelIndex].w;
+  if (frameNum >= MAX_SPP) {
+    return;
+  }
+  payload.done = false;
+  payload.alpha = vec3(1.);
+
+  payload.seed = uvec3(lauchIndex, uint(frameNum), 1);
+  vec2 pixel_jitter = vec2(rand(payload.seed), rand(payload.seed));
+
+  mat4 cam_to_world = pinhole.initial_transform_to_world;
+  // yaw x
+  rotate_two_axis(cam_to_world, 2, 0, SPEED_ROTATE * uScene.mouse.x);
+  // roll -y
+  rotate_two_axis(cam_to_world, 1, 2, -SPEED_ROTATE * uScene.mouse.y);
+  vec3 rayOrigin = cam_to_world[3].xyz;
+  vec3 rayDirection = sampleRayDirection(pinhole.vfov_radian, cam_to_world,
+                                         gl_LaunchIDEXT.xy + pixel_jitter);
+  float rayTmin = EPSILON;
+  float rayTmax = RT_DEFAULT_MAX;
+
+  vec3 res = vec3(0.f);
+  payload.bsdfSampleRecord.pdf_w = 0.;
+  payload.bsdfSampleRecord.sampled_type = 0u;
+
+  for (uint currentVertIndex = 1; currentVertIndex <= MAX_DEPTH;
+       ++currentVertIndex) {
+    // clear contributions
+    payload.emit_radiance = vec4(0.);
+    float previous_bsdf_pdf_w = payload.bsdfSampleRecord.pdf_w;
+    uint previous_bsdf_type = payload.bsdfSampleRecord.sampled_type;
+
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, RADIANCE_RAY,
+                NUM_RAY_TYPES, RADIANCE_RAY, rayOrigin, rayTmin, rayDirection,
+                rayTmax, int(RADIANCE_RAY));
+
+    if (payload.done) {
+      break;
+    }
+
+    // bsdf eval
+    {
+      float wgt = 1.0;
+      if (currentVertIndex > 1 && !IS_TYPE_SPECULAR(previous_bsdf_type)) {
+        // TODO: sceneOneLightPdf(geom_light_index)
+        float lgt_pdf = payload.emit_radiance.w;
+        float bsdf_pdf = previous_bsdf_pdf_w;  // from previous pdf sampling
+        wgt = (bsdf_pdf * bsdf_pdf) *
+              safe_rcp(lgt_pdf * lgt_pdf + bsdf_pdf * bsdf_pdf);
+      }
+      res += payload.alpha * wgt *
+             payload.emit_radiance.xyz;  // f is already absorbed in alpha
+    }
+    // light eval would be MAX_DEPTH + 1
+    if (currentVertIndex == MAX_DEPTH) break;
+
+    vec3 absHitP = abs(payload.hitPoint);
+    float epsilon = EPSILON * max(max(absHitP.x, absHitP.y), absHitP.z);
+
+    // do light eval
+    {
+      if (payload.lightSampleRecord.radiance_estimate != vec3(0.) &&
+          payload.lightSampleRecord.bsdf_evaluation != vec4(0.)) {
+        vec3 ray_dir =
+            payload.lightSampleRecord.point_sample.p - payload.hitPoint;
+        float Ldist = length(ray_dir);
+        ray_dir /= Ldist;
+        const float ray_tmax = (1.f - SHADOW_EPSILON) * Ldist;
+
+        shadowRayIsShadowed = false;
+        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, SHADOW_RAY,
+                    NUM_RAY_TYPES, SHADOW_RAY, payload.hitPoint, epsilon,
+                    ray_dir, ray_tmax, int(SHADOW_RAY));
+        if (!shadowRayIsShadowed) {
+          float bsdf_pdf = payload.lightSampleRecord.bsdf_evaluation.w;
+          float lgt_pdf =
+              payload.lightSampleRecord.point_sample.pdf;  // w.r.t solid angle
+          float wgt =
+              (lgt_pdf * lgt_pdf) / (lgt_pdf * lgt_pdf + bsdf_pdf * bsdf_pdf);
+          // directIllum_contrib
+          res += payload.alpha * wgt *
+                 payload.lightSampleRecord.bsdf_evaluation.xyz *
+                 payload.lightSampleRecord.radiance_estimate;
+        }
+      }
+    }
+
+    if (payload.bsdfSampleRecord.f == vec3(0.)) break;
+    // TODO: break when contrib too low
+    payload.alpha *= payload.bsdfSampleRecord.f;  // update path throughput
+
+    // prepare next ray
+    rayOrigin = payload.hitPoint;
+    rayDirection = payload.bsdfSampleRecord.wiW;
+    rayTmin = epsilon;
+    rayTmax = RT_DEFAULT_MAX;
+  }
+
+  pixelBuffer.pixels[pixelIndex] += vec4(res, 1.0);
+}

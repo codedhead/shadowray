@@ -1,0 +1,136 @@
+{
+  "schema": "default_0.1.0",
+  "rayTypes": 1,
+  "rayMiss": {
+    "shader": "envmap.rmiss",
+    "shaderRecord": [{
+      "type": "mat4",
+      "data": {
+        "rowMajorMatrix": [
+          -0.922278, 0, 0.386527, 0,
+          0, 1, 0, 0,
+          -0.386527, 0, -0.922278, 1.17369,
+          0, 0, 0, 1
+        ]
+      }
+    }]
+  },
+  "rayGen": {
+    "shader": "path.rgen",
+    "shaderRecord": [{
+      "type": "mat4",
+      "data": [{ // initial_transform_to_world
+        "rowMajorMatrix": [
+          0.00560664, -0.488405, -0.872599, 23.1701,
+          0, 0.872613, -0.488413, 15.7142,
+          0.999984, 0.00274286, 0.00490048, -0.172476,
+          0, 0, 0, 1
+        ]
+      }]
+    }, {
+      "type": "float", // vfov radians
+      "data": 0.343 //  39.3077'
+    }, {
+      "type": "float", // lens radius
+      "data": 0
+    }, {
+      "type": "float", // focal distance
+      "data": 4096
+    }]
+  },
+  "bindings": [{
+    "binding": 3,
+    "sampler": {
+      "magFilter": "linear",
+      "minFilter": "linear"
+    }
+  }, {
+    "binding": 4,
+    "texture2D": "/assets/textures/envmap.hdr"
+  }],
+  "materials": {
+    "floor": {
+      "rchit": "checker.rchit",
+      "shaderRecord": [{
+        "type": "vec3",
+        "data": [0.65, 0.65, 0.65] /* albedo */
+      }, {
+        "type": "vec3",
+        "data": [1, 1, 1] /* albedo */
+      }]
+    },
+    "dielectric1.5": {
+      "rchit": "glass.rchit",
+      "shaderRecord": [{
+        "type": "vec3", // KR
+        "data": [1.0, 1.0, 1.0]
+      }, {
+        "type": "vec3", // KT
+        "data": [1.0, 1.0, 1.0]
+      }, {
+        "type": "vec2",
+        "data": [1.0, 1.5] // etai, etat
+      }]
+    },
+    "dielectric1.33": {
+      "rchit": "glass.rchit",
+      "shaderRecord": [{
+        "type": "vec3", // KR
+        "data": [1.0, 1.0, 1.0]
+      }, {
+        "type": "vec3", // KT
+        "data": [1, 0.67, 0.17]
+      }, {
+        "type": "vec2",
+        "data": [1.0, 1.33] // etai, etat
+      }]
+    },
+    "dielectric1.13": {
+      "rchit": "glass.rchit",
+      "shaderRecord": [{
+        "type": "vec3", // KR
+        "data": [1.0, 1.0, 1.0]
+      }, {
+        "type": "vec3", // KT
+        "data": [1, 0.67, 0.17]
+      }, {
+        "type": "vec2",
+        "data": [1.0, 1.13] // etai, etat
+      }]
+    }
+  },
+  "tlas": [{
+    "blas": {
+      "geometries": [{
+        "type": "obj",
+        "filename": "/assets/scenes/teapot/models/floor.obj"
+      }]
+    },
+    "material": "floor",
+    "transformToWorld": {
+      "rowMajorMatrix": [
+        -34.6854, 36.1079, 4.61062e-006, -0.708772,
+        -4.37713e-006, 2.18856e-006, -50.0685, 0,
+        -36.1079, -34.6854, 1.6405e-006, -0.732108,
+        0, 0, 0, 1
+      ]
+    }
+  }, {
+    "blas": {
+      "geometries": [{
+        "type": "obj",
+        "filename": "/assets/scenes/teapot/models/Mesh000.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/teapot/models/Mesh001.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/teapot/models/Mesh002.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/teapot/models/Mesh003.obj"
+      }]
+    },
+    "material": ["dielectric1.13", "dielectric1.5", "dielectric1.33", "dielectric1.5"]
+  }]
+}

@@ -1,0 +1,23 @@
+.tabButton.activeTab {
+  background: orange;
+  color: white;
+}
+
+.tabButton {
+  /* border: 1px solid #673ab7; */
+  background-color: #444;
+  margin-right: 1px;
+  line-height: 2rem;
+  user-select: none;
+  cursor: pointer;
+  display: inline-block;
+  padding: 0 1rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: white;
+}
+
+.tabButton:not(.activeTab):hover {
+  background-color: lightgray;
+  color: black;
+}

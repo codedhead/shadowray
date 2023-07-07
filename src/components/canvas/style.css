@@ -1,0 +1,19 @@
+.fps {
+  right: 0;
+  width: 100px;
+  background: black;
+  position: absolute;
+}
+
+.actionContainer {
+  display: flex;
+  flex-direction: row;
+}
+
+.toggleButton {
+  cursor: pointer;
+}
+
+.toggleButton img:hover {
+  opacity: 0.7;
+}

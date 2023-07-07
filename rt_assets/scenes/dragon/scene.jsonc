@@ -1,0 +1,218 @@
+{
+  "schema": "default_0.1.0",
+  "width": 1024,
+  "height": 512,
+  "rayTypes": 1,
+  "rayMiss": {
+    "shader": "envmap.rmiss",
+    "shaderRecord": [{
+      "type": "mat4",
+      "data": {
+        "rowMajorMatrix": [
+          -0.922278, 0, 0.386527, 0,
+          0, 1, 0, 0,
+          -0.386527, 0, -0.922278, 1.17369,
+          0, 0, 0, 1
+        ]
+      }
+    }]
+  },
+  "rayGen": {
+    "shader": "path.rgen",
+    "shaderRecord": [{
+      "type": "mat4",
+      "data": [{ // initial_transform_to_world
+        "lookAt": {
+          "origin": [-6.15, 0.56235, -2.35],
+          "target": [-3.5, 0.36235, 0],
+          "up": [0, 1, 0]
+        }
+      }]
+    }, {
+      "type": "float", // vfov radians
+      "data": 0.343 //  39.3077'
+    }, {
+      "type": "float", // lens radius
+      "data": 0.05
+    }, {
+      "type": "float", // focal distance
+      "data": 3.2
+    }]
+  },
+  "bindings": [
+    // 0,1,2 are reserved
+    {
+      "binding": 3,
+      "sampler": {
+        "magFilter": "linear",
+        "minFilter": "linear"
+      }
+    }, {
+      "binding": 4,
+      "texture2D": "/assets/textures/envmap.hdr"
+    }
+  ],
+  "materials": {
+    "red": {
+      "rchit": "phong.rchit",
+      "shaderRecord": [{
+        "type": "vec3", // KS
+        "data": [0.55, 0.1, 0.1]
+      }, {
+        "type": "float",
+        "data": 10 // exp
+      }]
+    },
+    "blue": {
+      "rchit": "phong.rchit",
+      "shaderRecord": [{
+        "type": "vec3", // KS
+        "data": [0.1, 0.1, 0.55]
+      }, {
+        "type": "float",
+        "data": 10 // exp
+      }]
+    },
+    "floor": {
+      "rchit": "checker.rchit",
+      "shaderRecord": [{
+        "type": "vec3",
+        "data": [0.65, 0.65, 0.65] /* albedo */
+      }, {
+        "type": "vec3",
+        "data": [1, 1, 1] /* albedo */
+      }]
+    }
+  },
+  "blas": {
+    "dragon": {
+      // { min: Vec3(-53.8365, 26.38715, -25.0255), max: Vec3(47.99125, 98.322, 20.413101) }
+      "geometries": [{
+        "type": "obj",
+        "filename": "/assets/models/dragon.3.obj"
+      }]
+    }
+  },
+  "tlas": [{
+    "blas": {
+      "geometries": [{
+        "type": "obj",
+        "filename": "/assets/models/rect.obj"
+      }]
+    },
+    "material": "floor",
+    "transformToWorld": [{
+      "scale": [20, 20, 20]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "red",
+    "transformToWorld": [{
+      "translate": [0.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [-1.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "red",
+    "transformToWorld": [{
+      "translate": [-2.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [-3.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "red",
+    "transformToWorld": [{
+      "translate": [-4.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [-5.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [1.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "red",
+    "transformToWorld": [{
+      "translate": [2.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [3.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "red",
+    "transformToWorld": [{
+      "translate": [4.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }, {
+    "blas": "dragon",
+    "material": "blue",
+    "transformToWorld": [{
+      "translate": [5.0, -0.2638715, 0.0]
+    }, {
+      "scale": [-0.01, 0.01, 0.01]
+    }, {
+      "rotate": [0, 1, 0, 0]
+    }]
+  }]
+}

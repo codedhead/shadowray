@@ -1,0 +1,114 @@
+{
+  "schema": "default_0.1.0",
+  "rayTypes": 2,
+  "rayMiss": "constant.rmiss",
+  "rayGen": {
+    "shader": "mispath.rgen",
+    "shaderRecord": [{
+      "type": "mat4",
+      "data": [{ // initial_transform_to_world
+        "lookAt": {
+          "origin": [278, 273, -800],
+          "target": [278, 273, -799],
+          "up": [0, 1, 0]
+        }
+      }]
+    }, {
+      "type": "float", // vfov radians
+      "data": 0.343 //  39.3077'
+    }]
+  },
+  "materials": {
+    "box": [ /* radiance ray */ {
+      "rchit": "diffuse.rchit",
+      "shaderRecord": [{
+        "type": "vec4",
+        "data": [0, 0, 0, 0] /* vec3(light radiance), float(inv_area) */
+      }, {
+        "type": "vec3",
+        "data": [0.65, 0.65, 0.65] /* albedo */
+      }]
+    }, /* shadow ray */ {
+      "rahit": "shadow.rahit"
+    }],
+    "white": [ /* radiance ray */ {
+      "rchit": "diffuse.rchit",
+      "shaderRecord": [{
+        "type": "vec4",
+        "data": [0, 0, 0, 0] /* vec3(light radiance), float(inv_area) */
+      }, {
+        "type": "vec3",
+        "data": [0.65, 0.65, 0.65] /* albedo */
+      }]
+    }, /* shadow ray */ {
+      "rahit": "shadow.rahit"
+    }],
+    "red": [ /* radiance ray */ {
+      "rchit": "diffuse.rchit",
+      "shaderRecord": [{
+        "type": "vec4",
+        "data": [0, 0, 0, 0] /* vec3(light radiance), float(inv_area) */
+      }, {
+        "type": "vec3",
+        "data": [1.0, 0.0, 0.0] /* albedo */
+      }]
+    }, /* shadow ray */ {
+      "rahit": "shadow.rahit"
+    }],
+    "green": [ /* radiance ray */ {
+      "rchit": "diffuse.rchit",
+      "shaderRecord": [{
+        "type": "vec4",
+        "data": [0, 0, 0, 0] /* vec3(light radiance), float(inv_area) */
+      }, {
+        "type": "vec3",
+        "data": [0.0, 1.0, 0.0] /* albedo */
+      }]
+    }, /* shadow ray */ {
+      "rahit": "shadow.rahit"
+    }],
+    "light": [ /* radiance ray */ {
+      "rchit": "diffuse.rchit",
+      "shaderRecord": [{
+        "type": "vec4",
+        "data": [15.6, 15.6, 15.6, 7.33e-5] /* vec3(light radiance), float(inv_area) */
+      }, {
+        "type": "vec3",
+        "data": [0.78, 0.78, 0.78] /* albedo */
+      }]
+    }, /* shadow ray */ {
+      "rahit": "shadow.rahit"
+    }]
+  },
+  "geometries": {},
+  "tlas": [{
+    "blas": {
+      "geometries": [{
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_ceiling.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_luminaire.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_back.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_floor.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_greenwall.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_redwall.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_largebox.obj"
+      }, {
+        "type": "obj",
+        "filename": "/assets/scenes/cbox/meshes/cbox_smallbox.obj"
+      }]
+    },
+    "material": ["white", "light", "white", "white", "green", "red", "box", "box"]
+  }]
+}

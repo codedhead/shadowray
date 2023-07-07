@@ -1,0 +1,113 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+#extension GL_GOOGLE_include_directive : require
+#include "common.glsl"
+
+const uint MAX_DEPTH = 10u;
+const float RT_DEFAULT_MAX = 3e38;
+const uint SPP = 1u;
+const uint MAX_SPP = 4096u;
+
+layout(location = 0) rayPayloadEXT RayPayload_PT_Radiance payload;
+layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
+
+layout(std140, set = 0, binding = 1) buffer PixelBuffer { vec4 pixels[]; }
+pixelBuffer;
+
+layout(std140, set = 0, binding = 2) uniform SceneUniforms {
+  uint reset;
+  vec4 mouse;  // mouse pixel coords. xy: current (if MLB down), zw: click
+}
+uScene;
+
+layout(shaderRecordEXT) buffer ThinLens {
+  mat4 initial_transform_to_world;
+  float vfov_radian;
+  float radius;
+  float focus_distance;
+}
+thinlens;
+
+void thinLensSampleRay(float vfov, mat4 transform_to_world, float lens_radius,
+                       float focus_distance, vec2 uv_sample, vec2 pixel,
+                       out vec3 world_origin, out vec3 world_dir) {
+  vec2 uv = lens_radius * square_to_disk(uv_sample.x, uv_sample.y);
+  vec3 local_offset = vec3(uv, 0.);
+
+  vec2 iplane = getImagePlaneSize(vfov);
+  vec2 ixy = (vec2(-0.5, -0.5) + pixel / gl_LaunchSizeEXT.xy) * iplane;
+  vec2 fxy = ixy * focus_distance;
+  vec3 local_fp = vec3(-fxy.x, -fxy.y, focus_distance);
+  vec3 local_dir = normalize(local_fp - local_offset);
+  world_dir = (transform_to_world * vec4(local_dir, 0.)).xyz;
+  world_origin = (transform_to_world * vec4(local_offset, 1.)).xyz;
+}
+
+void main() {
+  const uint pixelIndex = uint(gl_LaunchIDEXT.y) * uint(gl_LaunchSizeEXT.x) +
+                          uint(gl_LaunchIDEXT.x);
+  uint lauchIndex = gl_LaunchIDEXT.z * gl_LaunchSizeEXT.x * gl_LaunchSizeEXT.y +
+                    gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
+
+  if (uScene.reset > 0) {
+    pixelBuffer.pixels[pixelIndex] = vec4(0.0);
+  }
+  float frameNum = pixelBuffer.pixels[pixelIndex].w;
+  if (frameNum >= MAX_SPP) {
+    return;
+  }
+  payload.done = false;
+  payload.alpha = vec3(1.);
+
+  payload.seed = uvec3(lauchIndex, uint(frameNum), 1);
+  vec2 pixel_jitter = vec2(rand(payload.seed), rand(payload.seed));
+  vec3 rayOrigin, rayDirection;
+
+  const float SPEED_ROTATE = 0.2;
+  mat4 cam_to_world = thinlens.initial_transform_to_world;
+  // yaw x
+  rotate_two_axis(cam_to_world, 2, 0, SPEED_ROTATE * uScene.mouse.x);
+  // roll -y
+  rotate_two_axis(cam_to_world, 1, 2, -SPEED_ROTATE * uScene.mouse.y);
+  thinLensSampleRay(thinlens.vfov_radian, cam_to_world, thinlens.radius,
+                    thinlens.focus_distance,
+                    vec2(rand(payload.seed), rand(payload.seed)),
+                    gl_LaunchIDEXT.xy + pixel_jitter, rayOrigin, rayDirection);
+  float rayTmin = EPSILON;
+  float rayTmax = RT_DEFAULT_MAX;
+
+  vec3 res = vec3(0.f);
+
+  for (uint currentVertIndex = 1; currentVertIndex <= MAX_DEPTH;
+       ++currentVertIndex) {
+    // clear contributions
+    payload.emit_radiance = vec4(0.);
+
+    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 1, 0, rayOrigin,
+                rayTmin, rayDirection, rayTmax, 0);
+
+    // bsdf eval
+    res += payload.alpha *
+           payload.emit_radiance.xyz;  // f is already absorbed in alpha
+
+    if (payload.done) {
+      break;
+    }
+
+    vec3 absHitP = abs(payload.hitPoint);
+    float epsilon = EPSILON * max(max(absHitP.x, absHitP.y), absHitP.z);
+
+    if (payload.bsdfSampleRecord.f == vec3(0.)) break;
+    // TODO: break when contrib too low
+    payload.alpha *= payload.bsdfSampleRecord.f;  // update path throughput
+
+    // prepare next ray
+    rayOrigin = payload.hitPoint;
+    rayDirection = payload.bsdfSampleRecord.wiW;
+    rayTmin = epsilon;
+    rayTmax = RT_DEFAULT_MAX;
+  }
+
+  pixelBuffer.pixels[pixelIndex] += vec4(res, 1.0);
+}

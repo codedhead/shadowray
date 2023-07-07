@@ -1,0 +1,8 @@
+common.glsl
+mispath.rgen
+constant.rmiss
+diffuse.rchit
+mirror.rchit
+glass.rchit
+sphere.rint
+shadow.rahit

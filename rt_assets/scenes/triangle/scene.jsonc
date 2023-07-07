@@ -1,0 +1,21 @@
+{
+  "rayGen": "triangle.rgen",
+  "materials": {
+    "simple": {
+      "rchit": "triangle.rchit"
+    }
+  },
+  "tlas": [{
+    "blas": {
+      "geometries": [{
+        "type": "triangles",
+        "vertices": [
+          0, 0.5, 0,
+          -0.5, -0.5, 0,
+          0.5, -0.5, 0
+        ]
+      }]
+    },
+    "material": "simple"
+  }]
+}

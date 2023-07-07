@@ -1,0 +1,5 @@
+common.glsl
+mispath.rgen
+constant.rmiss
+diffuse.rchit
+shadow.rahit

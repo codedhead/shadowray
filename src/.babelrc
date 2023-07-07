@@ -1,0 +1,10 @@
+{
+  // "sourceType": "unambiguous",
+  "presets": [
+    "preact-cli/babel"
+    // , {
+    //   "modules": "cjs"
+    // }
+  ],
+  "sourceType": "unambiguous"
+}

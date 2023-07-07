@@ -1,0 +1,34 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+hitAttributeEXT HitAttributes {
+  vec2 _not_used;
+  vec3 geometric_normal;
+}
+sphere;
+
+// unit sphere
+void main() {
+  float _t;
+  vec3 so2ro = gl_ObjectRayOriginEXT;  // - vec3(0.)
+  float a = dot(gl_ObjectRayDirectionEXT, gl_ObjectRayDirectionEXT);
+  float b = 2.f * dot(so2ro, gl_ObjectRayDirectionEXT);
+  float c = dot(so2ro, so2ro) - 1.;  // - radius*radius
+
+  float delta = b * b - 4. * a * c;
+  if (delta < 0.) {
+    return;
+  }
+  float e = sqrt(delta);
+  float _1_2a = 0.5f / a;
+  _t = (-b - e) * _1_2a;
+  // TODO: provide rtPotentialHit api?
+  if (_t < gl_RayTminEXT || _t >= gl_RayTmaxEXT) {
+    _t = (-b + e) * _1_2a;
+  }
+  vec3 object_p = (so2ro + _t * gl_ObjectRayDirectionEXT);  // on unit sphere
+  // transpose(inv(gl_ObjectToWorldEXT)) * n
+  // or n' * inv(gl_ObjectToWorldEXT)
+  sphere.geometric_normal = normalize((object_p * gl_WorldToObjectEXT).xyz);
+  reportIntersectionEXT(_t, 0);
+}
